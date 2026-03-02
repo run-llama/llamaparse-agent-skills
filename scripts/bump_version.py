@@ -111,24 +111,67 @@ def bump_version(skill: str, bump_type: BumpType) -> None:
     print(f"Bumped version: {json_ver} -> {new_ver}")
 
 
+def get_version(skill: str) -> None:
+    if not (SKILLS_DIR / skill / "SKILL.md").is_file():
+        print(f"No such file: {str((SKILLS_DIR / skill / 'SKILL.md'))}")
+        sys.exit(1)
+
+    frontmatter_ver, _ = _load_version_from_frontmatter(
+        str(SKILLS_DIR / skill / "SKILL.md")
+    )
+    json_ver, _ = _load_version_from_json(skill)
+
+    frontmatter_semver = _parse_semver(frontmatter_ver)
+    json_semver = _parse_semver(json_ver)
+
+    if not _compare_semver(frontmatter_semver, json_semver):
+        print(
+            f"Version mismatch! metadata.json: {json_ver}, frontmatter: {frontmatter_ver}"
+        )
+        sys.exit(2)
+
+    print(json_ver)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Manage skill versions across metadata.json and SKILL.md frontmatter.",
     )
-    parser.add_argument(
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # bump subcommand
+    bump_parser = subparsers.add_parser(
+        "bump",
+        help="Bump the version of a skill.",
+    )
+    bump_parser.add_argument(
         "skill",
         type=str,
         help="Name of the skill to bump (must exist under ../skills/<skill>/SKILL.md).",
     )
-    parser.add_argument(
+    bump_parser.add_argument(
         "bump_type",
         choices=["patch", "minor", "major"],
         help="Type of version bump to perform.",
     )
 
+    # get subcommand
+    get_parser = subparsers.add_parser(
+        "get",
+        help="Print the current version of a skill.",
+    )
+    get_parser.add_argument(
+        "skill",
+        type=str,
+        help="Name of the skill to query.",
+    )
+
     args = parser.parse_args()
 
-    bump_version(args.skill, args.bump_type)
+    if args.command == "bump":
+        bump_version(args.skill, args.bump_type)
+    elif args.command == "get":
+        get_version(args.skill)
 
 
 if __name__ == "__main__":
