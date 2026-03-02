@@ -1,0 +1,59 @@
+name: Pre-release for n8n-llama-cloud
+
+on:
+  workflow_dispatch:
+    inputs:
+      version-type:
+        description: "The type of release to prepare"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      skill:
+        description: "Name of the skill whose version is to bump"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare-release:
+    if: github.repository == 'run-llama/llamaparse-agent-skills'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Run version bump
+        id: prepare
+        shell: bash
+        env:
+          VERSION_TYPE: ${{ github.event.inputs.version-type }}
+          SKILL: ${{ github.event.inputs.skill }}
+        run: |
+          ./bump_version.py bump $SKILL $VERSION_TYPE
+          new_version=$(./bump_version get $SKILL)
+          echo "version=$new_version" >> $GITHUB_OUTPUT
+        working-directory: scripts
+
+      - name: Create Release PR
+        id: rpr
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: Prepare release
+          signoff: false
+          branch: ${{ vars.RELEASE_BRANCH_NAME }}
+          delete-branch: true
+          title: "Release ${{ steps.prepare.outputs.version }}"
+          draft: false
