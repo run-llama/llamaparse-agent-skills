@@ -55,5 +55,5 @@ jobs:
           signoff: false
           branch: ${{ vars.RELEASE_BRANCH_NAME }}
           delete-branch: true
-          title: "Release ${{ steps.prepare.outputs.version }}"
+          title: "Release ${{ steps.prepare.outputs.version }} for ${{ github.event.inputs.skill }}"
           draft: false

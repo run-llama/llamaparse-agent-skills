@@ -1,0 +1,71 @@
+name: Release skill on PR merge
+
+on:
+  workflow_dispatch:
+    inputs:
+      skill:
+        description: "Name of the skill"
+        required: true
+        type: string
+      version:
+        description: "Target version for the release"
+        required: true
+        type: string
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: >
+      github.repository == 'run-llama/llamaparse-agent-skills' && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event.pull_request.merged == true &&
+         github.event.pull_request.head.ref == vars.RELEASE_BRANCH_NAME)
+      )
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Parse skill and version
+        id: parse
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          DISPATCH_SKILL: ${{ github.event.inputs.skill }}
+          DISPATCH_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "skill=$DISPATCH_SKILL"     >> $GITHUB_OUTPUT
+            echo "version=$DISPATCH_VERSION" >> $GITHUB_OUTPUT
+          else
+            # Expected format: "Release {version} for {skill}"
+            if [[ "$PR_TITLE" =~ ^Release[[:space:]]([^[:space:]]+)[[:space:]]for[[:space:]](.+)$ ]]; then
+              echo "version=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+              echo "skill=${BASH_REMATCH[2]}"   >> $GITHUB_OUTPUT
+            else
+              echo "PR title did not match expected format: $PR_TITLE"
+              exit 1
+            fi
+          fi
+
+      - name: Zip skills folder
+        shell: bash
+        run: |
+          zip -r "skills-latest.zip" skills/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "${{ steps.parse.outputs.skill }}-${{ steps.parse.outputs.version }}"
+          name: "Release ${{ steps.parse.outputs.version }} for ${{ steps.parse.outputs.skill }}"
+          files: "skills-latest.zip"
+          generate_release_notes: true
