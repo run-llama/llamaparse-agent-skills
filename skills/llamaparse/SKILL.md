@@ -5,7 +5,7 @@ compatibility: Needs a `LLAMA_CLOUD_API_KEY` defined within the environment and 
 license: MIT
 metadata:
   author: LlamaIndex
-  version: "0.1.0"
+  version: "0.1.1"
 ---
 
 # LlamaParse Skill
