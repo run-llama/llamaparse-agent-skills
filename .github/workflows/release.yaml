@@ -69,3 +69,11 @@ jobs:
           name: "Release ${{ steps.parse.outputs.version }} for ${{ steps.parse.outputs.skill }}"
           files: "skills-latest.zip"
           generate_release_notes: true
+
+      - name: Update latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "latest"
+          name: "Latest"
+          files: "skills-latest.zip"
+          prerelease: true # keeps it from hijacking the /releases/latest pointer
