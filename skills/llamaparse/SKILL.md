@@ -35,6 +35,14 @@ Then wait for the user's input.
 
 ---
 
+## Step 0 — Install `llama-cloud` (optional)
+
+If the user does not have the `llama-cloud` package installed, add it to the current environment by running:
+
+```bash
+uv pip install 'llama-cloud>=1.0.0'
+```
+
 ## Step 1 — Produce a Python Script
 
 Once the user confirms the environment variables are set and provides the necessary details for the parsing job, produce a **python script**.
