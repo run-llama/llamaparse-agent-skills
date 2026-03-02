@@ -43,7 +43,7 @@ jobs:
           SKILL: ${{ github.event.inputs.skill }}
         run: |
           ./bump_version.py bump $SKILL $VERSION_TYPE
-          new_version=$(./bump_version get $SKILL)
+          new_version=$(./bump_version.py get $SKILL)
           echo "version=$new_version" >> $GITHUB_OUTPUT
         working-directory: scripts
 
