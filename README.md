@@ -6,7 +6,7 @@ Unblock document intelligence for your agents with LlamaParse skills.
 
 ### llamaparse 
 
-Unstructured documents parsing and text-extraction guidelines leveraging LlamaParse.
+Skill for unstructured documents parsing and text-extraction leveraging LlamaParse.
 
 **Use with:**
 
@@ -21,6 +21,22 @@ Unstructured documents parsing and text-extraction guidelines leveraging LlamaPa
 - Node 18+ and `npm` (or another package manager)
 - (Optional) `@llamaindex/llama-cloud@latest` typescript package installed in the current Node environment
 
+### liteparse
+
+Skill for local-first, fast document parsing, conversion and spatial text extraction.
+
+**Use with:**
+
+- PDFs (main target), Office documents and images (require extra dependencies)
+- Text-dense documents with tables and images
+- In general, whenever the agent needs a quick and not-100%-accurate way to extract content from unstructured documents
+
+**Pre-requisites**
+
+- Node 18+ and `npm` (or another package manager)
+- `@llamaindex/liteparse` globally installed (`npm install -g @llamaindex/liteparse`)
+- (Optional) Libreoffice for Office documents support
+- (Optional) Imagemagick for images support
 
 ## Installation
 
