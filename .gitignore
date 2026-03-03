@@ -2,3 +2,9 @@
 .env
 __pycache__/
 .claude/
+
+# TS-related deps/files
+node_modules/
+bun.lock
+package.json
+tsconfig.json

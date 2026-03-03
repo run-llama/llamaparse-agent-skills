@@ -1,7 +1,7 @@
 ---
 name: llamaparse
 description: Use this skill when the user asks to parse the content of an unstructured file (PDF, PPTX, DOCX...)
-compatibility: Needs a `LLAMA_CLOUD_API_KEY` defined within the environment and the `llama-cloud>=1.0` python library installed.
+compatibility: Needs a `LLAMA_CLOUD_API_KEY` defined within the environment and the `@llamaindex/llama-cloud@latest` typescript library installed.
 license: MIT
 metadata:
   author: LlamaIndex
@@ -20,7 +20,7 @@ When this skill is invoked, respond with:
 I'm ready to use LlamaParse to parse files. Before we begin, please confirm that:
 
 - `LLAMA_CLOUD_API_KEY` is set as environment variable within the current environment
-- `llama-cloud>=1.0` is installed and available within the current python environment
+- `@llamaindex/llama-cloud@latest` is installed and available within the current Node environment
 
 If both of them are set, please provide:
 
@@ -28,7 +28,7 @@ If both of them are set, please provide:
 2. Specific parsing options, such as tier, API version, custom prompt, processing options...
 3. Any requests you might have regarding the parsed content of the file.
 
-I will produce a python script to run the parsing job and, once you approved its execution, I will report the results back to you based on your request.
+I will produce a Typescript script to run the parsing job and, once you approved its execution, I will report the results back to you based on your request.
 ```
 
 Then wait for the user's input.
@@ -37,45 +37,65 @@ Then wait for the user's input.
 
 ## Step 0 — Install `llama-cloud` (optional)
 
-If the user does not have the `llama-cloud` package installed, add it to the current environment by running:
+If the user does not have the `@llamaindex/llama-cloud` package installed, add it to the current environment by running:
 
 ```bash
-uv pip install 'llama-cloud>=1.0.0'
+npm install @llamaindex/llama-cloud@latest
 ```
 
-## Step 1 — Produce a Python Script
+## Step 1 — Produce a Typescript Script
 
-Once the user confirms the environment variables are set and provides the necessary details for the parsing job, produce a **python script**.
+Once the user confirms the environment variables are set and provides the necessary details for the parsing job, produce a **typescript script**.
 
-As a source of truth for the python script, you can:
+As a source of truth for the TS script, you can:
 
-- Refer to the [example.py](scripts/example.py) script, which covers most of the necessary configurations for LlamaParse
+- Refer to the [example.ts](scripts/example.ts) script, which covers most of the necessary configurations for LlamaParse
 - Refer to the complete LlamaParse Documentation, fetching the `https://developers.llamaindex.ai/python/cloud/llamaparse/api-v2-guide/` page.
 
 ### Scripting Best Practices
 
 Follow these guidelines when generating scripts:
 
-#### 1. Always Use the Async Client
+#### 1. Always Use the Top-Level `LlamaCloud` Client
 
-Use `AsyncLlamaCloud` (not the sync client) for all parsing operations. Wrap the entry point with `asyncio.run()`.
+Use `LlamaCloud` (the API client) for all parsing operations:
 
-```python
-from llama_cloud import AsyncLlamaCloud
-client = AsyncLlamaCloud(api_key=os.getenv("LLAMA_CLOUD_API_KEY"))
+```typescript
+import LlamaCloud from "@llamaindex/llama-cloud";
+
+// Define a client
+const client = new LlamaCloud({
+  apiKey: process.env["LLAMA_CLOUD_API_KEY"], // This is the default and can be omitted
+});
+
 ```
 
 #### 2. Two-Step Upload → Parse Pattern
 
 Always upload first to get a file ID, then parse using the file ID. Never pass raw file bytes directly to `parse()`.
 
-```python
-# Step 1: Upload
-file_obj = await client.files.create(file=file_path, purpose="parse")
-file_id = file_obj.id
+```typescript
+import { readFile, writeFile } from "fs/promises";
+import { basename } from "path";
 
-# Step 2: Parse using the file ID
-result = await client.parsing.parse(file_id=file_id, ...)
+// 1. Convert the file path into a File object
+const buffer = await readFile(filePath);
+const fileName = basename(filePath);
+const file = new File([buffer], fileName);
+// 2. Upload the file to the cloud
+const fileObj = await client.files.create({
+  file: file,
+  purpose: "parse",
+});
+// 3. Get the file ID
+const fileId = fileObj.id;
+// 4. Use the file ID to parse the file
+const result = await client.parsing.parse({
+  tier: "agentic",
+  version: "latest",
+  file_id: fileId,
+  ...
+});
 ```
 
 If the user already has a file ID (e.g. from a prior upload), skip the upload step and use it directly.
@@ -97,8 +117,8 @@ The `expand` parameter controls what content is returned. Omitting it returns mi
 
 | Value | Returns |
 |-------|---------|
-| `text` | Plain text via `result.text_full` |
-| `markdown` | Markdown via `result.markdown_full` |
+| `text_full` | Plain text via `result.text_full` |
+| `markdown_full` | Markdown via `result.markdown_full` |
 | `items` | Page-level JSON via `result.items.pages` |
 | `text_content_metadata` | Per-page text metadata |
 | `markdown_content_metadata` | Per-page markdown metadata |
@@ -111,41 +131,48 @@ Only request metadata `*_content_metadata` variants when you need presigned URLs
 
 #### 5. Handle None Results Defensively
 
-`result.text_full`, `result.markdown_full`, and `result.items` may be `None` on failure. Always guard against this:
+`result.text_full`, `result.markdown_full`, and `result.items` may be `undefined` on failure. Always guard against this:
 
-```python
-text = result.text_full or ""
-markdown = result.markdown_full or ""
+```typescript
+const text = result.text_full ?? "";
+const markdown = result.markdown_full ?? "";
 ```
 
 #### 6. Use Structured Options for Advanced Configuration
 
 Group options using the correct nested keys:
 
-```python
-result = await client.parsing.parse(
-    tier="agentic",
-    version="latest",
-    file_id=file_id,
-    expand=["markdown"],
-    input_options={
-        "presentation": {"skip_embedded_data": False},
+```typescript
+const result = await client.parsing.parse({
+  tier: "agentic",
+  version: "latest",
+  file_id: fileId,
+  input_options: {
+    presentation: {
+      skip_embedded_data: false,
     },
-    output_options={
-        "images_to_save": ["screenshot"],
-        "markdown": {
-            "tables": {"output_tables_as_markdown": True},
-            "annotate_links": True,
-        },
+  },
+  output_options: {
+    images_to_save: ["screenshot"],
+    markdown: {
+      tables: { output_tables_as_markdown: true },
+      annotate_links: true,
     },
-    processing_options={
-        "specialized_chart_parsing": "agentic",
-        "ocr_parameters": {"languages": ["en"]},
-    },
-    agentic_options={
-        "custom_prompt": "Extract and summarize the key findings.",
-    },
-)
+  },
+  processing_options: {
+    specialized_chart_parsing: "agentic",
+    ocr_parameters: { languages: ["de", "en"] },
+  },
+  agentic_options: {
+    custom_prompt:
+      "Extract text from the provided file and translate it from German to English.",
+  },
+  expand: [
+    "markdown_full",
+    "images_content_metadata",
+    "markdown_content_metadata",
+  ],
+});
 ```
 
 Use `agentic_options.custom_prompt` whenever the user wants to guide extraction (translation, summarization, structured extraction, etc.).
@@ -154,41 +181,40 @@ Use `agentic_options.custom_prompt` whenever the user wants to guide extraction 
 
 When `images_content_metadata` is in `expand`, download images via presigned URLs with Bearer auth:
 
-```python
-async with httpx.AsyncClient(
-    headers={"Authorization": f"Bearer {os.getenv('LLAMA_CLOUD_API_KEY')}"}
-) as http:
-    response = await http.get(image.presigned_url)
-    response.raise_for_status()
-    with open(image.filename, "wb") as f:
-        f.write(response.content)
+```typescript
+if (result.images_content_metadata) {
+  for (const image of result.images_content_metadata.images) {
+    if (image.presigned_url) {
+      const response = await fetch(image.presigned_url, {
+        headers: {
+          Authorization: `Bearer ${process.env["LLAMA_CLOUD_API_KEY"]}`,
+        },
+      });
+      if (response.ok) {
+        const content = await response.bytes();
+        await writeFile(image.filename, content);
+      }
+    }
+  }
+}
 ```
 
-Add `httpx>=0.28` to the script dependencies when images are requested.
+#### 8. Use the Node shebang
 
-#### 8. Use the `uv` Script Header for Portability
+Every generated script should include the node shebang:
 
-Every generated script should include the inline `uv` script metadata header:
-
-```python
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.10"
-# dependencies = [
-#    "llama-cloud>=1.0.0",
-#    "httpx>=0.28",   # only if downloading images
-# ]
-# ///
+```typescript
+#!/usr/bin/env node
 ```
 
 ---
 
-## Step 2 — Execute the Python Script
+## Step 2 — Execute the Typescript Script
 
-Once the python script has been produced, you should:
+Once the typescript script has been produced, you should:
 
 1. Present the script to the user and ask for permissions to run it (depending on the current permissions settings)
 2. Once you obtained permission to run, execute the script
 3. Explore the results based on the user's requests
 
-> In order to run python scripts, it is highly recommended to use `uv`.
+> In order to run typescript scripts, it is highly recommended to use: `npx tsx script.ts`.
