@@ -2,5 +2,9 @@
   "llamaparse": {
     "author": "LlamaIndex",
     "version": "1.0.0"
+  },
+  "liteparse": {
+    "version": "0.1.0",
+    "author": "LlamaIndex"
   }
 }

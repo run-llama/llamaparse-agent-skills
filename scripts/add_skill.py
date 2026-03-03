@@ -17,7 +17,8 @@ def add_skill(skill: str, version: str, author: str) -> None:
     if skill not in data:
         data[skill] = {"version": version, "author": author}
         with open(METADATA_FILE, "w") as f:
-            json.dump(data, f, indent=2)
+            content = json.dumps(data, indent=2) + "\n"
+            f.write(content)
         sys.exit(0)
     else:
         print(f"Skill {skill} already in metadata.json")
