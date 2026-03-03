@@ -100,7 +100,8 @@ def bump_version(skill: str, bump_type: BumpType) -> None:
     data[skill]["version"] = new_ver
 
     with open(METADATA_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+        json_content = json.dumps(data, indent=2) + "\n"
+        f.write(json_content)
 
     new_content = content.replace(
         f'version: "{frontmatter_ver}"', f'version: "{new_ver}"'
