@@ -5,7 +5,7 @@ compatibility: Requires Node 18+ and `@llamaindex/liteparse` (`npm i -g @llamain
 license: MIT
 metadata:
   author: LlamaIndex
-  version: "0.1.0"
+  version: "1.0.0"
 ---
 
 # Effective LiteParse
