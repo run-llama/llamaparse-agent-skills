@@ -1,5 +1,5 @@
 ---
-name: effective-liteparse
+name: liteparse
 description: Use this skill whenever a task involves a document file (PDF, DOCX, PPTX, XLSX, or image) and you need to read it or pull text, tables, or specific values out of it — to answer a question about its contents, look up a figure, or extract data. Provides fast, local, model-free extraction via the `lit` CLI with disciplined, low-cost search patterns.
 compatibility: Requires Node 18+ and `@llamaindex/liteparse` (`npm i -g @llamaindex/liteparse`, verify `lit --version`). LibreOffice for Office files; ImageMagick for images. The bundled search.py helper needs `uv`.
 license: MIT
