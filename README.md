@@ -40,7 +40,7 @@ Skill for local-first, fast document parsing, conversion and spatial text extrac
 
 ### llamacloud-index
 
-Skill for agentic retrieval over LlamaCloud Index v2, the managed knowledge base of the LlamaParse Platform, through the LlamaParse MCP server.
+Skill for agentic retrieval over LlamaCloud Index v2, the managed knowledge base of the LlamaParse Platform, through the platform REST API with `curl`.
 
 **Use with:**
 
@@ -50,8 +50,8 @@ Skill for agentic retrieval over LlamaCloud Index v2, the managed knowledge base
 
 **Pre-requisites**
 
-- The LlamaParse MCP server connected in your MCP client: `https://mcp.llamaindex.ai/mcp` (unified) or `https://mcp.llamaindex.ai/index/{indexId}/mcp` (scoped to a single index)
-- OAuth authentication on first use (no API key needed)
+- A `LLAMA_CLOUD_API_KEY` available within the environment
+- `curl` (and, recommended, `jq`)
 - An existing [Index v2](https://developers.llamaindex.ai/llamaparse/cloud-index-v2/getting_started/) index
 
 ## Installation
