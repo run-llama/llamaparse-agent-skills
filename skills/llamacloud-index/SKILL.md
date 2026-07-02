@@ -20,21 +20,23 @@ All tools require a valid session. The MCP server uses OAuth — no API key is n
 
 ## The Tools
 
-| Tool | What it does |
-|---|---|
-| `getUserProjects` | Lists your available projects |
-| `listIndexes` | Discovers the indexes you can query |
-| `findFilesInIndex` | Locates relevant files within an index |
-| `readFileFromIndex` | Reads the contents of a file in an index |
-| `grepFileFromIndex` | Searches for pattern matches within indexed files |
-| `retrieveFromIndex` | Performs hybrid (sparse + dense) retrieval over an index |
+| Tool | What it does | Key inputs |
+|---|---|---|
+| `getUserProjects` | Lists the project IDs associated with your account | — |
+| `listIndexes` | Lists the indexes you can query — vector-indexed directories whose files you can find, read, and grep, and over which you can perform retrieval | `projectId` (optional) |
+| `findFilesInIndex` | Locates files within an index by exact name or name substring | `fileNameContains` (substring match, recommended) or `fileName` (exact match) |
+| `readFileFromIndex` | Reads the content of a file in an index — the whole file, or a window of it | `fileId`, `offset` (chars), `maxLength` (chars) |
+| `grepFileFromIndex` | Greps a file's content for a pattern | `fileId`, `pattern`, `contextChars` (context around each match), `limit` (max matches) |
+| `retrieveFromIndex` | Performs hybrid (sparse + dense) retrieval over an index | `query`, `topK` (default 10), `rerankTopN` (enables reranking; off if omitted) |
+
+Every tool accepts an optional `projectId` and falls back to your default project when it is omitted. The file/retrieval tools take an `indexId` (as returned by `listIndexes`) — except on the scoped `/index/{indexId}/mcp` endpoint, where the index is inherited from the route. `fileId` values come from `findFilesInIndex`.
 
 ## Step 0 — Pick an Index
 
 How you pick the index depends on which endpoint the client is connected to:
 
 - **Scoped endpoint (`https://mcp.llamaindex.ai/index/{indexId}/mcp`)** — the index ID is inherited from the route and is already in context. Skip discovery entirely and go straight to searching. This is the recommended setup when a workflow always targets one knowledge base.
-- **Unified endpoint (`https://mcp.llamaindex.ai/mcp`)** — call `listIndexes` to discover the indexes you can query. If the results span multiple projects and it is unclear which one the user means, call `getUserProjects` to orient yourself. If more than one index plausibly matches the user's question, ask the user which one to use — do not silently query the wrong knowledge base.
+- **Unified endpoint (`https://mcp.llamaindex.ai/mcp`)** — call `listIndexes` to discover the indexes you can query. It searches your default project unless you pass a `projectId`; if the work spans projects, call `getUserProjects` to get the project IDs you can pass. If more than one index plausibly matches the user's question, ask the user which one to use — do not silently query the wrong knowledge base.
 
 Discover once per conversation. Do not re-run `listIndexes` before every query; reuse the index you already identified unless the user changes topic to a different corpus.
 
@@ -64,7 +66,9 @@ Rules of thumb:
 
 - **`retrieveFromIndex` matches meaning; `grepFileFromIndex` matches patterns.** Use retrieval when you know what you mean but not how the document phrases it. Use grep when you know the literal string (a product name, an account code, "Section 4.2") — a semantic query for an exact identifier wastes a retrieval on something grep answers precisely.
 - **Verification flows are grep-shaped.** "Does the contract mention X?" is a grep in the located file, not a retrieval.
-- **Full reads are the last resort.** Reach for `readFileFromIndex` only when passages genuinely aren't enough — e.g. the answer depends on document-wide structure or you must read a short file end-to-end.
+- **Find files by substring.** Prefer `fileNameContains` over exact `fileName` in `findFilesInIndex` unless you know the exact file name — user-supplied names rarely match verbatim.
+- **Bound every call.** For grep, set `contextChars` so the surrounding text comes back with each match (no follow-up read needed) and `limit` to cap the number of matches. For retrieval, `topK` defaults to 10 — raise it only when recall genuinely matters, and set `rerankTopN` when precision matters (reranking is disabled unless you ask for it).
+- **Read in windows, not in full.** `readFileFromIndex` takes `offset` and `maxLength` in characters: when a grep match or retrieved passage points at a region, read that window instead of the whole file. Full reads are the last resort — e.g. the answer depends on document-wide structure or the file is short.
 
 ## Grounding Answers
 
@@ -77,7 +81,7 @@ Every claim in your answer must be backed by content you actually retrieved:
 
 ## Common Pitfalls
 
-- **Don't paste whole files into context.** `readFileFromIndex` on a large document floods the conversation with content you'll pay for on every subsequent turn. If you need one fact from a file, `grepFileFromIndex` it; if you need the relevant passages, `retrieveFromIndex`. Read a file in full only when nothing narrower can answer the question.
+- **Don't paste whole files into context.** `readFileFromIndex` without `offset`/`maxLength` on a large document floods the conversation with content you'll pay for on every subsequent turn. If you need one fact from a file, `grepFileFromIndex` it; if you need the relevant passages, `retrieveFromIndex`; if you need a region, read a bounded window. Read a file in full only when nothing narrower can answer the question.
 - **Don't one-shot RAG.** A single `retrieveFromIndex` call is the floor, not the ceiling. If the top passages don't answer the question, refine the query, or pivot: use the file names surfaced by retrieval to grep or inspect the most promising document.
 - **Don't grep for paraphrases.** `grepFileFromIndex` matches patterns, not meaning. If your grep for the user's phrasing comes back empty, that does not mean the answer is absent — switch to `retrieveFromIndex`.
 - **Don't repeat identical calls.** Re-running the same retrieval or grep returns the same results. Change the query, the pattern, or the tool.
