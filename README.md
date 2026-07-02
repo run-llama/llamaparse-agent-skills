@@ -38,6 +38,22 @@ Skill for local-first, fast document parsing, conversion and spatial text extrac
 - (Optional) Libreoffice for Office documents support
 - (Optional) Imagemagick for images support
 
+### llamacloud-index
+
+Skill for agentic retrieval over LlamaCloud Index v2, the managed knowledge base of the LlamaParse Platform, through the LlamaParse MCP server.
+
+**Use with:**
+
+- Questions that should be answered from documents stored in an Index v2 knowledge base
+- Agentic retrieval workflows: discover indexes, locate files, grep indexed content, and retrieve passages with hybrid (sparse + dense) search
+- In general, whenever the agent should navigate an index like a file system instead of doing one-shot RAG
+
+**Pre-requisites**
+
+- The LlamaParse MCP server connected in your MCP client: `https://mcp.llamaindex.ai/mcp` (unified) or `https://mcp.llamaindex.ai/index/{indexId}/mcp` (scoped to a single index)
+- OAuth authentication on first use (no API key needed)
+- An existing [Index v2](https://developers.llamaindex.ai/llamaparse/cloud-index-v2/getting_started/) index
+
 ## Installation
 
 With the `skills` CLI:

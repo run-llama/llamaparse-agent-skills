@@ -6,5 +6,9 @@
   "liteparse": {
     "version": "1.0.0",
     "author": "LlamaIndex"
+  },
+  "llamacloud-index": {
+    "version": "0.1.0",
+    "author": "LlamaIndex"
   }
 }
